@@ -43,8 +43,9 @@ export function Home() {
     }
   };
 
-  const handleAddGarden = (newGarden: { name: string; location: string; image: string | null }) => {
-    addGarden(newGarden);
+  // Update the parameters to match what the Modal is now sending
+  const handleAddGarden = (name: string, location: string, file: File | null) => {
+    addGarden(name, location, file); // Send it straight to the Context!
     setIsModalOpen(false);
   };
 

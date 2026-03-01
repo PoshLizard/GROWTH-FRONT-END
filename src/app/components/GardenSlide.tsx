@@ -515,7 +515,7 @@ export function GardenSlide({ garden, onPlantClick, onAddPlant, onChatClick }: G
                                 className="absolute bottom-0 flex flex-col items-center group cursor-pointer animate-pop hover:z-50"
                                 style={{ left: '50%', marginLeft: `${offset}px`, transform: 'translateX(-50%)', animationDelay: `${i * 0.1}s` }}>
                                 <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-white text-black font-bold text-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg pointer-events-none z-50">
-                                    {plant.name}
+                                    {plant.nickname}
                                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
                                 </div>
                                 <div className="wood-texture relative p-2 rounded shadow-2xl border-2 border-[#5D4037] transform transition-transform group-hover:scale-105 group-hover:rotate-1 animate-creak origin-bottom z-10">

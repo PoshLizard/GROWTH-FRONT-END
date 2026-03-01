@@ -10,10 +10,14 @@ import { useGardens } from '../context/GardenContext';
 export function GardenDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { gardens, addPlantToGarden, updatePlant, deletePlant } = useGardens();
+  const { gardens, addPlantToGarden, deletePlant, scanPlant } = useGardens();
   
-  const garden = gardens.find(g => g.id === id);
-  const [selectedPlantId, setSelectedPlantId] = useState<string | null>(null);
+  // Convert URL string ID to a number to match your Spring Boot model
+  const gardenId = Number(id);
+  const garden = gardens.find(g => g.id === gardenId);
+  
+  // Plant IDs are now numbers!
+  const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
   const [isAddPlantModalOpen, setIsAddPlantModalOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
@@ -64,7 +68,7 @@ export function GardenDetail() {
       <main className="container mx-auto py-8">
         <GardenSlide
           garden={garden}
-          onPlantClick={(plantId) => setSelectedPlantId(plantId)}
+          onPlantClick={(plantId) => setSelectedPlantId(Number(plantId))} // Ensure it's passed as a number
           onAddPlant={() => setIsAddPlantModalOpen(true)}
           onChatClick={() => setIsChatOpen(true)}
         />
@@ -76,28 +80,21 @@ export function GardenDetail() {
       <PlantDetailModal
         plant={selectedPlant}
         onClose={() => setSelectedPlantId(null)}
-        onWater={() => {
-          if (garden && selectedPlant) {
-            updatePlant(garden.id, selectedPlant.id, { lastWatered: 'Just now' });
-          }
-        }}
         onDelete={() => {
             if (garden && selectedPlant) {
                 deletePlant(garden.id, selectedPlant.id);
                 setSelectedPlantId(null);
             }
         }}
-        onScan={(image) => {
+        onScan={async (imageFile) => {
             if (garden && selectedPlant) {
-                updatePlant(garden.id, selectedPlant.id, { 
-                    lastScanned: 'Just now',
-                    image: image,
-                    // Simulate new diagnosis results
-                    waterLevel: Math.floor(Math.random() * 30) + 60,
-                    sunlight: Math.floor(Math.random() * 4) + 4,
-                    temperature: Math.floor(Math.random() * 15) + 65,
-                    isHealthy: Math.random() > 0.1
-                });
+                try {
+                    // This triggers the API call to your Spring Boot backend!
+                    await scanPlant(garden.id, selectedPlant.id, imageFile);
+                } catch (error) {
+                    console.error("Failed to scan plant", error);
+                    alert("Scan failed. Please check the backend connection.");
+                }
             }
         }}
       />
@@ -106,9 +103,10 @@ export function GardenDetail() {
       <AddPlantModal
         isOpen={isAddPlantModalOpen}
         onClose={() => setIsAddPlantModalOpen(false)}
-        onAdd={(plantData) => {
-          if (id) {
-            addPlantToGarden(id, plantData);
+        // Adjusted to use the FormData pattern we established for Gardens
+        onAdd={(name: string, species: string, file: File | null) => {
+          if (gardenId) {
+            addPlantToGarden(gardenId, name, species, file);
             setIsAddPlantModalOpen(false);
           }
         }}

@@ -4,13 +4,16 @@ import { X, Upload, Sprout, MapPin } from 'lucide-react';
 interface AddGardenModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (garden: { name: string; location: string; image: string | null }) => void;
+  // CHANGE 1: Update the onAdd signature
+  onAdd: (name: string, location: string, file: File | null) => void;
 }
 
 export function AddGardenModal({ isOpen, onClose, onAdd }: AddGardenModalProps) {
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // CHANGE 2: Add state to hold the actual file
+  const [actualFile, setActualFile] = useState<File | null>(null); 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -18,8 +21,9 @@ export function AddGardenModal({ isOpen, onClose, onAdd }: AddGardenModalProps) 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setImagePreview(imageUrl);
+      // CHANGE 3: Save the real file for the backend
+      setActualFile(file); 
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
@@ -27,16 +31,14 @@ export function AddGardenModal({ isOpen, onClose, onAdd }: AddGardenModalProps) 
     e.preventDefault();
     if (!name.trim() || !location.trim()) return;
     
-    onAdd({
-      name,
-      location,
-      image: imagePreview
-    });
+    // CHANGE 4: Pass the arguments separately
+    onAdd(name, location, actualFile);
     
     // Reset form
     setName('');
     setLocation('');
     setImagePreview(null);
+    setActualFile(null);
     onClose();
   };
 
