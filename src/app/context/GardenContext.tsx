@@ -3,6 +3,8 @@ import { Garden, Plant } from '../types';
 
 interface GardenContextType {
   gardens: Garden[];
+  loading: boolean;
+  refreshGardens: () => Promise<void>; // Added this
   addGarden: (name: string, location: string, imageFile: File | null) => Promise<void>;
   addPlantToGarden: (gardenId: number, nickname: string, species: string) => Promise<void>;
   updatePlant: (gardenId: number, plantId: number, updates: Partial<Plant>) => void;
@@ -11,21 +13,34 @@ interface GardenContextType {
   scanPlant: (gardenId: number, plantId: number, imageFile: File) => Promise<void>;
 }
 
-const GardenContext = createContext<GardenContextType | undefined>(undefined);
 const API_BASE = "http://localhost:8080/api";
+export const GardenContext = createContext<GardenContextType | undefined>(undefined);
 
 export function GardenProvider({ children }: { children: ReactNode }) {
   const [gardens, setGardens] = useState<Garden[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 1. FETCH ALL DATA ON LOAD
+  // 1. REFRESH ALL DATA (The "Master Fetch")
+  const refreshGardens = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/gardens`);
+      if (!res.ok) throw new Error("Failed to fetch gardens");
+      const data = await res.json();
+      setGardens(data);
+    } catch (err) {
+      console.error("Error refreshing gardens:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
   useEffect(() => {
-    fetch(`${API_BASE}/gardens`)
-      .then(res => res.json())
-      .then(data => setGardens(data))
-      .catch(err => console.error("Error fetching gardens:", err));
+    refreshGardens();
   }, []);
 
-  // 2. CREATE GARDEN (with Image)
+  // 2. CREATE GARDEN
   const addGarden = async (name: string, location: string, imageFile: File | null) => {
     const formData = new FormData();
     formData.append('name', name);
@@ -34,56 +49,37 @@ export function GardenProvider({ children }: { children: ReactNode }) {
 
     const res = await fetch(`${API_BASE}/gardens`, {
       method: 'POST',
-      body: formData, // No Content-Type header needed for FormData
+      body: formData,
     });
-    const newGarden = await res.json();
-    setGardens((prev) => [...prev, newGarden]);
+    if (res.ok) await refreshGardens();
   };
 
-  // 3. CREATE PLANT (Linked to Garden)
-  // Update the signature and the fetch call
+  // 3. CREATE PLANT
   const addPlantToGarden = async (gardenId: number, nickname: string, species: string) => {
     const res = await fetch(`${API_BASE}/plants/garden/${gardenId}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }, // Tell Spring Boot to expect JSON!
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nickname, species }),
     });
 
-    if (!res.ok) {
-        throw new Error(`Failed to add plant. Status: ${res.status}`);
-    }
-
-    const newPlant = await res.json();
-    
-    setGardens((prev) => prev.map(g => 
-      g.id === gardenId ? { ...g, plants: [...g.plants, newPlant] } : g
-    ));
+    if (res.ok) await refreshGardens();
   };
+
   // 4. DELETE GARDEN
   const deleteGarden = async (gardenId: number) => {
     const res = await fetch(`${API_BASE}/gardens/${gardenId}`, { method: 'DELETE' });
-    if (res.ok) {
-      setGardens((prev) => prev.filter(g => g.id !== gardenId));
-    }
+    if (res.ok) await refreshGardens();
   };
 
   // 5. DELETE PLANT
   const deletePlant = async (gardenId: number, plantId: number) => {
     const res = await fetch(`${API_BASE}/plants/${plantId}`, { method: 'DELETE' });
-    if (res.ok) {
-      setGardens((prev) => prev.map(g => 
-        g.id === gardenId ? { ...g, plants: g.plants.filter(p => p.id !== plantId) } : g
-      ));
-    }
+    if (res.ok) await refreshGardens();
   };
 
   // 6. SCAN PLANT (AI Integration)
-  // 6. SCAN PLANT (AI Integration)
   const scanPlant = async (gardenId: number, plantId: number, imageFile: File) => {
     const formData = new FormData();
-    
-    // Note: Make sure 'file' matches the @RequestParam in your Spring Boot controller!
-    // If your controller expects @RequestParam("imageBytes"), change 'file' to 'imageBytes' here.
     formData.append('file', imageFile); 
 
     try {
@@ -93,26 +89,32 @@ export function GardenProvider({ children }: { children: ReactNode }) {
       });
 
       if (!res.ok) throw new Error("Scan API failed");
-      
-      // The backend successfully saved the image, updated the plant, and logged the AI data.
-      // Now, we just grab the fresh data from the database to instantly sync the UI!
-      const refreshRes = await fetch(`${API_BASE}/gardens`);
-      const freshGardens = await refreshRes.json();
-      setGardens(freshGardens);
-      
+      await refreshGardens(); // Re-sync UI after scan
     } catch (error) {
       console.error("Error scanning plant:", error);
       throw error; 
     }
   };
 
+  // 7. LOCAL UPDATE (For instant UI feedback)
   const updatePlant = (gardenId: number, plantId: number, updates: Partial<Plant>) => {
-    // For things like "Watering" which might just be local state for now
-    setGardens((prev) => prev.map(g => g.id === gardenId ? { ...g, plants: g.plants.map(p => p.id === plantId ? { ...p, ...updates } : p) } : g));
+    setGardens((prev) => prev.map(g => 
+      g.id === gardenId ? { ...g, plants: g.plants.map(p => p.id === plantId ? { ...p, ...updates } : p) } : g
+    ));
   };
 
   return (
-    <GardenContext.Provider value={{ gardens, addGarden, addPlantToGarden, updatePlant, deletePlant, deleteGarden, scanPlant }}>
+    <GardenContext.Provider value={{ 
+      gardens, 
+      loading, 
+      refreshGardens, 
+      addGarden, 
+      addPlantToGarden, 
+      updatePlant, 
+      deletePlant, 
+      deleteGarden, 
+      scanPlant 
+    }}>
       {children}
     </GardenContext.Provider>
   );

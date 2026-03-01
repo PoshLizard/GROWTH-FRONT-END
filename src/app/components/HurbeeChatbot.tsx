@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Leaf, Sprout } from 'lucide-react';
-import { useGardens } from '../context/GardenContext';
+import { X, Send } from 'lucide-react';
 import hurbeeIcon from '../../images/hurbee.gif';
 
 interface Message {
@@ -25,49 +24,73 @@ export function HurbeeChatbot({ isOpen, onClose }: HurbeeChatbotProps) {
     },
   ]);
   const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { gardens } = useGardens();
 
-  // Auto-scroll to bottom of chat
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isOpen]);
+  }, [messages, isTyping, isOpen]);
 
-  const handleSendMessage = (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isTyping) return;
 
-    const newMessage: Message = {
+    const userText = inputText.trim();
+    const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputText,
+      text: userText,
       sender: 'user',
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputText('');
-    
-    // Simulate bot thinking and response
-    setTimeout(() => {
-      const botResponse = generateResponse(inputText, gardens);
+    setIsTyping(true);
+
+    try {
+      const response = await fetch('http://localhost:8080/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: userText }),
+      });
+
+      if (!response.ok) throw new Error('Network response was not ok');
+
+      const data = await response.json();
+
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: data.response || "I'm sorry, I'm having trouble connecting to my garden brain right now.",
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Chat Error:', error);
       setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
-          text: botResponse,
+          id: Date.now().toString(),
+          text: "Bzzzzt! Something went wrong. Make sure my backend server is running!",
           sender: 'bot',
           timestamp: new Date(),
         },
       ]);
-    }, 1000);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
     <>
-      {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end animate-in slide-in-from-bottom-5 duration-300">
           <div className="mb-4 w-80 sm:w-96 bg-card border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col h-[500px] max-h-[80vh]">
+            
             {/* Header */}
             <div className="bg-primary/10 p-4 flex items-center justify-between border-b border-border">
               <div className="flex items-center gap-3">
@@ -113,6 +136,22 @@ export function HurbeeChatbot({ isOpen, onClose }: HurbeeChatbotProps) {
                   </div>
                 </div>
               ))}
+              
+              {/* Typing Indicator */}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="size-8 rounded-full overflow-hidden shrink-0 mr-2 self-end mb-1">
+                    <img src={hurbeeIcon} alt="Bot" className="w-full h-full object-contain opacity-50" />
+                  </div>
+                  <div className="bg-card text-card-foreground border border-border px-4 py-2.5 rounded-2xl rounded-tl-none">
+                    <div className="flex gap-1">
+                      <span className="size-1.5 bg-muted-foreground rounded-full animate-bounce" />
+                      <span className="size-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <span className="size-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -126,12 +165,12 @@ export function HurbeeChatbot({ isOpen, onClose }: HurbeeChatbotProps) {
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Ask about your plants..."
+                  placeholder="Ask Hurbee anything..."
                   className="flex-1 bg-transparent border-none outline-none text-sm placeholder:text-muted-foreground/70"
                 />
                 <button
                   type="submit"
-                  disabled={!inputText.trim()}
+                  disabled={!inputText.trim() || isTyping}
                   className="p-2 bg-primary text-primary-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
                 >
                   <Send className="size-4" />
@@ -143,36 +182,4 @@ export function HurbeeChatbot({ isOpen, onClose }: HurbeeChatbotProps) {
       )}
     </>
   );
-}
-
-// Simple logic to generate responses based on keywords and context
-function generateResponse(input: string, gardens: any[]): string {
-  const lowerInput = input.toLowerCase();
-  
-  if (lowerInput.includes('hello') || lowerInput.includes('hi') || lowerInput.includes('hey')) {
-    return "Hello! I'm here to help you grow. What's on your mind?";
-  }
-
-  if (lowerInput.includes('water') || lowerInput.includes('watering')) {
-    return "Most plants prefer to be watered when the top inch of soil feels dry. Check your specific plant's needs in the details view!";
-  }
-  
-  if (lowerInput.includes('sun') || lowerInput.includes('light')) {
-    return "Light is crucial! Make sure your plants are getting the right amount of direct or indirect sunlight based on their type.";
-  }
-
-  if (lowerInput.includes('my plant') || lowerInput.includes('status') || lowerInput.includes('how are they')) {
-      const plantCount = gardens.reduce((acc, g) => acc + g.plants.length, 0);
-      const unhealthyCount = gardens.reduce((acc, g) => acc + g.plants.filter((p: any) => !p.isHealthy).length, 0);
-      
-      if (plantCount === 0) return "You haven't added any plants yet! Start by adding a garden and some plants.";
-      if (unhealthyCount > 0) return `You have ${plantCount} plants total, but ${unhealthyCount} need attention. Check for alerts!`;
-      return `Your ${plantCount} plants are looking great! Keep up the good work.`;
-  }
-  
-  if (lowerInput.includes('thank')) {
-      return "You're welcome! Happy gardening! 🌱";
-  }
-
-  return "That's an interesting question about gardening! While I'm still learning, I'd recommend checking the specific care instructions for your plant type.";
 }
