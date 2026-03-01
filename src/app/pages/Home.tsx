@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router';
 import { useGardens } from '../context/GardenContext';
 import { AddGardenModal } from '../components/AddGardenModal';
 import { Garden } from '../types';
-
+import logo from '../../images/logo.png'
 function NextArrow(props: any) {
   const { onClick } = props;
   return (
@@ -81,8 +81,12 @@ export function Home() {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-20">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/20">
-              <Leaf className="size-6 text-primary" />
+            <div className="p-2 rounded-lg bg-primary/20">       
+              <img 
+                src={logo} 
+                alt="Growth Logo" 
+                className="h-12 w-auto object-contain hover:scale-105 transition-transform cursor-pointer" 
+              />
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-green-700 to-emerald-500 bg-clip-text text-transparent drop-shadow-sm">Growth</h1>
           </div>

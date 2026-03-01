@@ -2,6 +2,7 @@ import React from 'react';
 import Slider from 'react-slick';
 import { Plus, Sprout, ChevronRight, ChevronLeft, Droplets, Leaf } from 'lucide-react';
 import { Garden } from '../types';
+import logo from '../../images/logo.png';
 
 interface HomePageProps {
   gardens: Garden[];
@@ -55,6 +56,7 @@ export function HomePage({ gardens, onSelectGarden, onAddGarden }: HomePageProps
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-green-950 via-emerald-900 to-slate-900">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-green-500/10 blur-[100px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 blur-[100px]" />
       </div>
@@ -63,6 +65,7 @@ export function HomePage({ gardens, onSelectGarden, onAddGarden }: HomePageProps
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-3 bg-white/5 px-6 py-2 rounded-full border border-white/10 backdrop-blur-md">
+            
             <Leaf className="size-5 text-green-400" />
             <span className="text-green-100 font-medium tracking-wider">GROWTH TRACKER</span>
           </div>
