@@ -103,10 +103,10 @@ export function GardenDetail() {
       <AddPlantModal
         isOpen={isAddPlantModalOpen}
         onClose={() => setIsAddPlantModalOpen(false)}
-        // Adjusted to use the FormData pattern we established for Gardens
-        onAdd={(name: string, species: string, file: File | null) => {
+        // We only pass the text data now!
+        onAdd={(nickname: string, species: string) => {
           if (gardenId) {
-            addPlantToGarden(gardenId, name, species, file);
+            addPlantToGarden(gardenId, nickname, species);
             setIsAddPlantModalOpen(false);
           }
         }}

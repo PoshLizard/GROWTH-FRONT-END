@@ -4,7 +4,7 @@ import { Garden, Plant } from '../types';
 interface GardenContextType {
   gardens: Garden[];
   addGarden: (name: string, location: string, imageFile: File | null) => Promise<void>;
-  addPlantToGarden: (gardenId: number, name: string, species: string, imageFile: File | null) => Promise<void>;
+  addPlantToGarden: (gardenId: number, nickname: string, species: string) => Promise<void>;
   updatePlant: (gardenId: number, plantId: number, updates: Partial<Plant>) => void;
   deletePlant: (gardenId: number, plantId: number) => Promise<void>;
   deleteGarden: (gardenId: number) => Promise<void>;
@@ -41,23 +41,24 @@ export function GardenProvider({ children }: { children: ReactNode }) {
   };
 
   // 3. CREATE PLANT (Linked to Garden)
-  const addPlantToGarden = async (gardenId: number, name: string, species: string, imageFile: File | null) => {
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('species', species);
-    if (imageFile) formData.append('file', imageFile);
-
+  // Update the signature and the fetch call
+  const addPlantToGarden = async (gardenId: number, nickname: string, species: string) => {
     const res = await fetch(`${API_BASE}/plants/garden/${gardenId}`, {
       method: 'POST',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' }, // Tell Spring Boot to expect JSON!
+      body: JSON.stringify({ nickname, species }),
     });
+
+    if (!res.ok) {
+        throw new Error(`Failed to add plant. Status: ${res.status}`);
+    }
+
     const newPlant = await res.json();
     
     setGardens((prev) => prev.map(g => 
       g.id === gardenId ? { ...g, plants: [...g.plants, newPlant] } : g
     ));
   };
-
   // 4. DELETE GARDEN
   const deleteGarden = async (gardenId: number) => {
     const res = await fetch(`${API_BASE}/gardens/${gardenId}`, { method: 'DELETE' });
