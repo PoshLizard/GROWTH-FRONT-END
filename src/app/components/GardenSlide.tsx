@@ -178,7 +178,7 @@ export function GardenSlide({ garden, onPlantClick, onAddPlant, onChatClick }: G
   }, [timeOfDay]);
 
 
-  const healthyCount = garden.plants.filter(p => p.isHealthy).length;
+  const healthyCount = garden.plants.filter(p => (p.healthScore ?? 0) >= 7).length;
   const totalPlants = garden.plants.length;
 
   const requiredWidth = useMemo(() => {
@@ -510,34 +510,59 @@ export function GardenSlide({ garden, onPlantClick, onAddPlant, onChatClick }: G
                         </div>
 
                         {/* Plant Signs */}
-                        {plantPositions.map(({ plant, offset }, i) => (
-                            <div key={plant.id} onClick={() => onPlantClick(plant.id)}
-                                className="absolute bottom-0 flex flex-col items-center group cursor-pointer animate-pop hover:z-50"
-                                style={{ left: '50%', marginLeft: `${offset}px`, transform: 'translateX(-50%)', animationDelay: `${i * 0.1}s` }}>
-                                <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-white text-black font-bold text-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg pointer-events-none z-50">
-                                    {plant.nickname}
-                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
-                                </div>
-                                <div className="wood-texture relative p-2 rounded shadow-2xl border-2 border-[#5D4037] transform transition-transform group-hover:scale-105 group-hover:rotate-1 animate-creak origin-bottom z-10">
-                                    {/* Nail details */}
-                                    <div className="absolute top-1 left-1 size-1 bg-[#3E2723] rounded-full opacity-70" />
-                                    <div className="absolute top-1 right-1 size-1 bg-[#3E2723] rounded-full opacity-70" />
-                                    
-                                    <div className="w-28 h-28 md:w-32 md:h-32 bg-stone-900 overflow-hidden rounded border border-[#5D4037]/50 relative">
-                                        <img src={plant.image} alt={plant.name} className="w-full h-full object-cover" />
-                                        {plant.waterLevel < 30 && <div className="absolute bottom-2 right-2 bg-blue-500 text-white p-1 rounded-full animate-bounce shadow-md border border-white"><Droplets className="size-4" /></div>}
-                                    </div>
-                                    <div className="mt-1 bg-[#4E342E] py-0.5 px-2 rounded-sm text-center shadow-inner border border-[#3E2723]/30">
-                                        <span className="text-[10px] text-[#FFECB3] uppercase tracking-wider font-semibold block truncate max-w-[110px] drop-shadow-sm">{plant.name || 'Plant'}</span>
-                                    </div>
-                                </div>
-                                <div className="wood-post-texture w-4 h-24 mt-[-2px] shadow-lg relative border-x border-[#3E2723] z-0">
-                                    <div className={`absolute bottom-0 w-full h-8 bg-gradient-to-t ${hillColors[2].replace('bg-gradient-to-t ', '')} to-transparent opacity-100`} />
-                                    <div className={`absolute -bottom-1 -left-3 w-3 h-8 ${hillColors[1]} rounded-t-full rotate-[-15deg] blur-[1px]`} />
-                                    <div className={`absolute -bottom-1 -right-3 w-3 h-6 ${hillColors[1]} rounded-t-full rotate-[15deg] blur-[1px]`} />
-                                </div>
-                            </div>
-                        ))}
+{plantPositions.map(({ plant, offset }, i) => {
+    // 1. ADD THIS LOGIC HERE
+    const displayImage = plant.imageUrl 
+        ? `http://localhost:8080${plant.imageUrl}` 
+        : "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=500";
+
+    // 2. CHANGE TO 'return (' 
+    return (
+        <div key={plant.id} onClick={() => onPlantClick(plant.id.toString())}
+            className="absolute bottom-0 flex flex-col items-center group cursor-pointer animate-pop hover:z-50"
+            style={{ left: '50%', marginLeft: `${offset}px`, transform: 'translateX(-50%)', animationDelay: `${i * 0.1}s` }}>
+            
+            <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-white text-black font-bold text-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg pointer-events-none z-50">
+                {plant.nickname}
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
+            </div>
+
+            <div className="wood-texture relative p-2 rounded shadow-2xl border-2 border-[#5D4037] transform transition-transform group-hover:scale-105 group-hover:rotate-1 animate-creak origin-bottom z-10">
+                {/* Nail details */}
+                <div className="absolute top-1 left-1 size-1 bg-[#3E2723] rounded-full opacity-70" />
+                <div className="absolute top-1 right-1 size-1 bg-[#3E2723] rounded-full opacity-70" />
+                
+                <div className="w-28 h-28 md:w-32 md:h-32 bg-stone-900 overflow-hidden rounded border border-[#5D4037]/50 relative">
+                    {/* UPDATED IMAGE TAG */}
+                    <img 
+                        src={displayImage} 
+                        alt={plant.nickname} 
+                        className="w-full h-full object-cover" 
+                    />
+                    
+                    {/* Water Level Notification */}
+                    {plant.waterLevel !== undefined && plant.waterLevel < 30 && (
+                        <div className="absolute bottom-2 right-2 bg-blue-500 text-white p-1 rounded-full animate-bounce shadow-md border border-white">
+                            <Droplets className="size-4" />
+                        </div>
+                    )}
+                </div>
+
+                <div className="mt-1 bg-[#4E342E] py-0.5 px-2 rounded-sm text-center shadow-inner border border-[#3E2723]/30">
+                    <span className="text-[10px] text-[#FFECB3] uppercase tracking-wider font-semibold block truncate max-w-[110px] drop-shadow-sm">
+                        {plant.nickname || 'Plant'}
+                    </span>
+                </div>
+            </div>
+
+            <div className="wood-post-texture w-4 h-24 mt-[-2px] shadow-lg relative border-x border-[#3E2723] z-0">
+                <div className={`absolute bottom-0 w-full h-8 bg-gradient-to-t ${hillColors[2].replace('bg-gradient-to-t ', '')} to-transparent opacity-100`} />
+                <div className={`absolute -bottom-1 -left-3 w-3 h-8 ${hillColors[1]} rounded-t-full rotate-[-15deg] blur-[1px]`} />
+                <div className={`absolute -bottom-1 -right-3 w-3 h-6 ${hillColors[1]} rounded-t-full rotate-[15deg] blur-[1px]`} />
+            </div>
+        </div>
+    ); // CLOSE RETURN
+})}
                     </div>
 
                     {/* 5. Foreground Grass (Lowered threshold) */}

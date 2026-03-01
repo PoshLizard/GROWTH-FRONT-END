@@ -45,7 +45,10 @@ export function PlantDetailModal({ plant, onClose, onDelete, onScan }: PlantDeta
     health: log.healthScore
   }));
 
-  const displayImage = "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=1080";
+  // Use the real image if it exists, otherwise fall back to Unsplash
+  const displayImage = plant.imageUrl 
+    ? `http://localhost:8080${plant.imageUrl}` 
+    : "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=1080";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">

@@ -81,7 +81,10 @@ export function GardenProvider({ children }: { children: ReactNode }) {
   // 6. SCAN PLANT (AI Integration)
   const scanPlant = async (gardenId: number, plantId: number, imageFile: File) => {
     const formData = new FormData();
-    formData.append('file', imageFile);
+    
+    // Note: Make sure 'file' matches the @RequestParam in your Spring Boot controller!
+    // If your controller expects @RequestParam("imageBytes"), change 'file' to 'imageBytes' here.
+    formData.append('file', imageFile); 
 
     try {
       const res = await fetch(`${API_BASE}/scans/${plantId}/image`, {
@@ -91,36 +94,18 @@ export function GardenProvider({ children }: { children: ReactNode }) {
 
       if (!res.ok) throw new Error("Scan API failed");
       
-      const newLog = await res.json(); // This is the new GrowthLog from Spring Boot
-
-      // Instantly update the UI with the new AI data
-      setGardens((prevGardens) => 
-        prevGardens.map(garden => {
-          if (garden.id === gardenId) {
-            return {
-              ...garden,
-              plants: garden.plants.map(plant => {
-                if (plant.id === plantId) {
-                  return {
-                    ...plant,
-                    // Update the plant's current health score to match the new scan
-                    healthScore: newLog.healthScore, 
-                    // Add the new log to the end of the history array
-                    logs: [...(plant.logs || []), newLog] 
-                  };
-                }
-                return plant;
-              })
-            };
-          }
-          return garden;
-        })
-      );
+      // The backend successfully saved the image, updated the plant, and logged the AI data.
+      // Now, we just grab the fresh data from the database to instantly sync the UI!
+      const refreshRes = await fetch(`${API_BASE}/gardens`);
+      const freshGardens = await refreshRes.json();
+      setGardens(freshGardens);
+      
     } catch (error) {
       console.error("Error scanning plant:", error);
-      throw error; // Re-throw so the modal can catch it and show an alert
+      throw error; 
     }
   };
+
   const updatePlant = (gardenId: number, plantId: number, updates: Partial<Plant>) => {
     // For things like "Watering" which might just be local state for now
     setGardens((prev) => prev.map(g => g.id === gardenId ? { ...g, plants: g.plants.map(p => p.id === plantId ? { ...p, ...updates } : p) } : g));

@@ -3,6 +3,7 @@ export interface Plant {
   nickname: string;
   species: string;
   healthScore: number;
+  imageUrl: string | null;
   logs: GrowthLog[];
 }
 

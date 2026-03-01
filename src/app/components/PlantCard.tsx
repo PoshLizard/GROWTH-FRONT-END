@@ -14,9 +14,10 @@ export function PlantCard({ plant, onClick }: PlantCardProps) {
   const latestLog = plant.logs && plant.logs.length > 0 ? plant.logs[plant.logs.length - 1] : null;
   const currentStage = latestLog?.growthStage || "Unknown stage";
 
-  // Fallback image since the backend Plant entity doesn't store an imageUrl yet
-  const displayImage = "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=500";
-
+  // The Magic Image Logic: Use the backend photo if it exists!
+  const displayImage = plant.imageUrl 
+    ? `http://localhost:8080${plant.imageUrl}` 
+    : "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=500";
   return (
     <div
       onClick={onClick}
